@@ -56,7 +56,7 @@ if __name__ == "__main__":
 	if json_output_name is not None:
 		json_full_dict: Dict[str, dict] = dict()
 
-		json_full_dict["exitcode"] = results.ok()
+		json_full_dict["exitcode"] = exitcode
 		json_full_dict["result"] = json_final_sum
 		json_full_dict["results"] = results.get_results()
 		json_full_dict.update(results.json())
