@@ -2,7 +2,7 @@ import os
 
 import testsuites.suite as suite
 
-from typing import Iterable, Tuple, List, Dict, Optional
+from typing import Iterable, Tuple, List, Dict, Optional, Union
 
 SUITE_NAME = "sum"
 SUITE_DIR = suite.make_suite_dirname(SUITE_NAME)
@@ -43,15 +43,15 @@ class __Comparator(suite.Comparator):
 		# Otherwise, test is success.
 		return suite.err_ok()
 
-def __test_naming(a: int, b: int, is_file: bool = True) -> str:
+def __test_naming(a: Union[int, str], b: Union[int, str], is_file: bool = True) -> str:
 	if is_file:
 		return f"test_{a}_{b}"
 	return f"{a} + {b}"
 
-def __file_naming(a: int, b: int, suffix: str) -> str:
+def __file_naming(a: Union[int, str], b: Union[int, str], suffix: str) -> str:
 	return f"{__test_naming(a, b)}.{suffix}"
 
-def __file_dir_naming(a: int, b: int, suffix: str) -> str:
+def __file_dir_naming(a: Union[int, str], b: Union[int, str], suffix: str) -> str:
 	suitename = __file_naming(a, b, suffix)
 	return os.path.join(SUITE_DIR, suitename)
 
@@ -65,7 +65,7 @@ def __generate_tests() -> Iterable[Tuple[str, List[str], str, str]]:
 		if not os.path.exists(p):
 			os.mkdir(p)
 
-	generated: Iterable[Tuple[str, str, str]] = []
+	generated: Iterable[Tuple[str, List[str], str, str]]= []
 
 	for a in range(1, 10):
 		for b in range(10, 20):
@@ -73,36 +73,56 @@ def __generate_tests() -> Iterable[Tuple[str, List[str], str, str]]:
 			raw_input = __file_dir_naming(a, b, "in")
 			raw_output = __file_dir_naming(a, b, "out")
 			raw_expected = __file_dir_naming(a, b, "ref")
-			with open(raw_input, 'w') as stream:
+			with open(raw_input, "w") as stream:
 				stream.write(f"{a} {b}\n")
 			if os.path.exists(raw_output):
 				os.remove(raw_output)
-			with open(raw_expected, 'w') as stream:
+			with open(raw_expected, "w") as stream:
 				stream.write(f"{a + b}\n")
 			test_data = (name, [raw_input, raw_output], raw_output, raw_expected)
 			generated.append(test_data)
 
 	return generated
 
+def __error_handling_tests() -> Iterable[Tuple[str, List[str]]]:
+	tests = []
+
+	tests.append(("no arguments", []))
+	tests.append(("only one argument", ["just_imagine_there_is_second_filename.txt"]))
+	tests.append(("no file", ["input.txt", "output.txt"]))
+
+	raw_input = __file_dir_naming("x", "y", "in")
+	raw_output = __file_dir_naming("x", "y", "out")
+	with open(raw_input, "w") as stream:
+		stream.write("x y\n")
+	tests.append(("X Y", [raw_input, raw_output]))
+
+	return tests
+
 def get_instance() -> Tuple[suite.Tester, Optional[Dict[str, float]]]:
-	ALL_COEFFICIENTS = ["a + b"]
 	COEFF_TO_ENVNAME = {
-		"a + b": "A_PLUS_B"
+		"a + b": "A_PLUS_B",
+		"bad sum": "BAD_SUM"
 	}
 
 	cmp = __Comparator()
-	hello_tester = suite.Tester(
+	tester = suite.Tester(
 		comparator = cmp,
 		is_stdin_input = False,
 		is_raw_input = True,
 		is_raw_output = False
 	)
+	coefficients = suite.get_coefficients(SUITE_NAME, COEFF_TO_ENVNAME)
 
 	tests = __generate_tests()
-	coefficients = suite.get_coefficients(SUITE_NAME, ALL_COEFFICIENTS, COEFF_TO_ENVNAME)
-
 	for test_data in tests:
 		test_name, test_input, test_output_stream, test_expected = test_data
-		hello_tester.add_success(test_name, test_input, test_expected, test_output_stream, categories = ["a + b"])
+		tester.add_success(test_name, test_input, test_expected, test_output_stream, categories = ["a + b"])
 
-	return hello_tester, coefficients
+	ERROR_EXITCODE = 1
+	tests = __error_handling_tests()
+	for test_data in tests:
+		test_name, test_input = test_data
+		tester.add_failed(test_name, test_input, ERROR_EXITCODE, categories = ["bad sum"])
+
+	return tester, coefficients

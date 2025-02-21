@@ -81,9 +81,10 @@ def make_suite_dirname(suite: str) -> str:
 	ensure_existence_directory(p)
 	return p
 
-def get_coefficients(suite_name: str, categories: Iterable[str], envnames: Dict[str, str]) -> Optional[Dict[str, float]]:
+def get_coefficients(suite_name: str, envnames: Dict[str, str]) -> Optional[Dict[str, float]]:
 	PREFIX = "SKKV_CPP"
 	coefficients: Dict[str, float] = {}
+	categories: List[str] = list(envnames.keys())
 	for category in categories:
 		raw_value = os.getenv(f"{PREFIX}_{suite_name.upper()}_{envnames[category]}")
 		if raw_value is None:
