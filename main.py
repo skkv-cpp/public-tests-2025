@@ -13,18 +13,17 @@ SELECTOR: Dict[str, Tuple[suite.Tester, Optional[Dict[str, float]]]] = {
 	suite_sum.SUITE_NAME: suite_sum.get_instance(),
 }
 
-def __calculate_final_sum(results: suite.Suite, coefficients: Dict[str, float]) -> Optional[float]:
+def __calculate_final_sum(results: suite.Suite, coefficients: Optional[Dict[str, float]]) -> float:
 	if coefficients is None or len(coefficients) == 0:
 		return 0.0
-	n_categories = len(coefficients)
 	f_sum = 0.0
 	raw_results = results.get_results()
 	for category, coefficient in coefficients.items():
 		if category not in raw_results:
-			continue
+			return 0.0
 		raw = raw_results[category]
 		f_sum += coefficient * raw
-	return f_sum / n_categories
+	return f_sum
 
 if __name__ == "__main__":
 	# Arguments.
