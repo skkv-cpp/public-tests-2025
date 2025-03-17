@@ -3,7 +3,7 @@ import subprocess
 import time
 
 from enum import Enum
-from typing import List, Union, Tuple, Optional, Dict, Iterable, Set
+from typing import Any, List, Union, Tuple, Optional, Dict, Iterable, Set
 from abc import abstractmethod, ABC
 
 TESTDATA_DIR = "testdata"
@@ -93,15 +93,15 @@ def get_coefficients(suite_name: str, envnames: Dict[str, str]) -> Optional[Dict
 	return coefficients
 
 def escape(x: str) -> str:
-	s = ''
+	s = ""
 	for c in x:
-		if c == '\n':
+		if c == "\n":
 			s += "\\n"
-		elif c == '\r':
+		elif c == "\r":
 			s += "\\r"
-		elif c == '\t':
+		elif c == "\t":
 			s += "\\t"
-		elif c == '\\':
+		elif c == "\\":
 			s += "\\\\"
 		else:
 			s += c
@@ -197,7 +197,8 @@ class Test:
 			is_stdin_input: bool,
 			is_raw_input: bool,
 			is_raw_output: bool,
-			input_separator: str
+			input_separator: str,
+			comparator: Optional[Any] = None,
 	):
 		self.name = name
 		self.categories = categories
@@ -212,6 +213,7 @@ class Test:
 		self.__is_raw_input = is_raw_input
 		self.__is_raw_output = is_raw_output
 		self.input_separator = input_separator
+		self.comparator = comparator
 
 		self.passes = exitcode == 0
 
@@ -232,7 +234,7 @@ class Test:
 			start = get_time()
 			try:
 				if self.__is_raw_input:
-					stdout, stderr = proc.communicate(to_str(input, self.__input_separator), timeout = full_timeout)
+					stdout, stderr = proc.communicate(to_str(input, self.input_separator), timeout = full_timeout)
 					end = get_time()
 					return (end - start, (stdout, stderr, proc.returncode))
 				else:
@@ -435,8 +437,8 @@ class Tester:
 		if not self.__is_stdin_input and not self.__is_raw_input:
 			raise NotImplementedError("[FATAL ERROR] Not raw input (from file) with cmd's arguments communication is not supported yet.")
 
-	def add_success(self, name: str, input: Union[str, int, float, List[str], List[int], List[float]], expected: Union[str, int, float, List[str], List[int], List[float]], output_stream: str = None, timeout: float = 1.0, categories: Iterable[str] = []):
-		test = Test(name, categories, input, expected, output_stream, timeout, 0, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator)
+	def add_success(self, name: str, input: Union[str, int, float, List[str], List[int], List[float]], expected: Union[str, int, float, List[str], List[int], List[float]], output_stream: str = None, timeout: float = 1.0, categories: Iterable[str] = [], comparator: Optional[Comparator] = None):
+		test = Test(name, categories, input, expected, output_stream, timeout, 0, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator, comparator)
 		self.__tests.append(test)
 
 	def add_failed(self, name: str, input: Union[str, int, float, List[str], List[int], List[float]], exitcode: int, timeout: float = 1.0, categories: Iterable[str] = []):
@@ -461,10 +463,11 @@ class Tester:
 					print(result)
 					suite.add_result(test, user_process, result)
 					continue
-				result = self.__comparator.pretest(result, test)
+				cmp = self.__comparator if test.comparator is None else test.comparator
+				result = cmp.pretest(result, test)
 				# If real result is None, then pretesting success and we should test with abstract method.
 				# Otherwise, pretest is failed.
-				result = self.__comparator.test(user_process, test) if result is None else result
+				result = cmp.test(user_process, test) if result is None else result
 				print(result)
 				suite.add_result(test, user_process, result)
 			else:
