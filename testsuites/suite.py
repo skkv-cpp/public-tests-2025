@@ -451,10 +451,16 @@ class Tester:
 		test = Test(name, categories, input, None, None, timeout, exitcode, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator)
 		self.__tests.append(test)
 
-	def run(self, program: str, timeout_factor: float, wrap: Optional[str]) -> Suite:
+	def run(self, program: str, timeout_factor: float, wrap: Optional[str], warmup: bool = False) -> Optional[Suite]:
 		# If there is no file, then no test.
 		if not os.path.exists(program):
 			raise FileNotFoundError(f"[FATAL ERROR] File (executable) named '{program}' not found.")
+
+		if warmup:
+			for test in self.__tests:
+				print(f"-- Warming up {test.name}...")
+				test.run(program, timeout_factor, wrap)
+			return None
 
 		suite = Suite()
 		for test in self.__tests:

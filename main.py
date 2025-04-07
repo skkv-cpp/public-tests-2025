@@ -55,6 +55,11 @@ if __name__ == "__main__":
 	wrap: Optional[str] = args["wrap"]
 
 	task_select, coefficients = SELECTOR[suite_suite]
+
+	# Warm up system first.
+	task_select.run(suite_program, setup_timeout_factor, wrap, True)
+
+	# Then run it naturally.
 	results = task_select.run(suite_program, setup_timeout_factor, wrap)
 	exitcode = 0 if results.ok() else 1
 
