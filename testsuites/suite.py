@@ -221,7 +221,8 @@ class Test:
 	# Otherwise, returns tuple of STDOUT, STDERR and RETURNCODE of program.
 	def __runner(self, program: str, input: Union[str, int, float, List[str], List[int], List[float]], timeout: float, timeout_factor: float, wrap: Optional[str]) -> Optional[UserProcess]:
 		full_program: List[str] = []
-		if wrap is None:
+		no_wrap = wrap is None
+		if no_wrap:
 			full_program = [program]
 		else:
 			full_program = [wrap, program]
@@ -234,7 +235,7 @@ class Test:
 		# If it's STDIN communication, then process should be created and then communicated.
 		# Otherwise, run once.
 		if self.__is_stdin_input:
-			proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True)
+			proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True, shell = not no_wrap)
 			start = get_time()
 			try:
 				if self.__is_raw_input:
@@ -258,7 +259,7 @@ class Test:
 		else:
 			start = get_time()
 			try:
-				proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True)
+				proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True, shell = not no_wrap)
 				stdout, stderr = proc.communicate(timeout = full_timeout)
 				end = get_time()
 				return UserProcess(stdout, stderr, proc.returncode, end - start)
