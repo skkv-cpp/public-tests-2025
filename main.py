@@ -4,7 +4,7 @@ import argparse
 import os
 import json
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Set
 
 import testsuites.suite as suite
 import testsuites.sum as suite_sum
@@ -14,6 +14,8 @@ SELECTOR: Dict[str, Tuple[suite.Tester, Optional[Dict[str, float]]]] = {
 	suite_sum.SUITE_NAME: suite_sum.get_instance(),
 	suite_invmat.SUITE_NAME: suite_invmat.get_instance(),
 }
+
+SHELL: Set[str] = { "bash", "powershell" }
 
 def __calculate_final_sum(results: suite.Suite, coefficients: Optional[Dict[str, float]]) -> float:
 	if coefficients is None or len(coefficients) == 0:
@@ -34,22 +36,26 @@ if __name__ == "__main__":
 	parser.add_argument("--suite", help = "select testing task", type = str, choices = SELECTOR, required = True)
 	parser.add_argument("--timeout-factor", help = "maximum execution time multiplier", type = float, default = 1.0)
 	parser.add_argument("--json-output-name", help = "generate full JSON report with provided output filename", type = str, default = None)
+	parser.add_argument("--wrap", help = "runs as script wrapper", type = str, choices = SHELL, default = None)
 
 	# Parse from sys.argv.
 	args = vars(parser.parse_args())
 
 	# suite arguments.
-	suite_program = os.path.abspath(args["program"])
+	suite_program = str(os.path.abspath(args["program"]))
 	suite_suite = str(args["suite"])
 
 	# Test setup.
-	setup_timeout_factor: float = float(args["timeout_factor"])
+	setup_timeout_factor = float(args["timeout_factor"])
 
 	# JSON results.
-	json_output_name = args["json_output_name"]
+	json_output_name: Optional[str] = args["json_output_name"]
+
+	# Wrap.
+	wrap: Optional[str] = args["wrap"]
 
 	task_select, coefficients = SELECTOR[suite_suite]
-	results = task_select.run(suite_program, setup_timeout_factor)
+	results = task_select.run(suite_program, setup_timeout_factor, wrap)
 	exitcode = 0 if results.ok() else 1
 
 	json_final_sum = __calculate_final_sum(results, coefficients)

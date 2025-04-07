@@ -219,8 +219,12 @@ class Test:
 
 	# Returns None, if there was a timeout expired exception.
 	# Otherwise, returns tuple of STDOUT, STDERR and RETURNCODE of program.
-	def __runner(self, program: str, input: Union[str, int, float, List[str], List[int], List[float]], timeout: float, timeout_factor: float) -> Optional[UserProcess]:
-		full_program = [program]
+	def __runner(self, program: str, input: Union[str, int, float, List[str], List[int], List[float]], timeout: float, timeout_factor: float, wrap: Optional[str]) -> Optional[UserProcess]:
+		full_program: List[str] = []
+		if wrap is None:
+			full_program = [program]
+		else:
+			full_program = [wrap, program]
 		full_timeout = timeout * timeout_factor
 
 		# If it's not STDIN communication, turn input to list as cmd's arguments.
@@ -263,9 +267,9 @@ class Test:
 				proc.kill()
 				return UserProcess("", "", None, end - start)
 
-	def run(self, program: str, timeout_factor: float) -> Union[UserProcess, Result]:
+	def run(self, program: str, timeout_factor: float, wrap: Optional[str]) -> Union[UserProcess, Result]:
 		try:
-			return self.__runner(program, self.input, self.__timeout, timeout_factor)
+			return self.__runner(program, self.input, self.__timeout, timeout_factor, wrap)
 		except Exception as e:
 			result = err_unknown(str(e))
 			return result
@@ -445,7 +449,7 @@ class Tester:
 		test = Test(name, categories, input, None, None, timeout, exitcode, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator)
 		self.__tests.append(test)
 
-	def run(self, program: str, timeout_factor: float) -> Suite:
+	def run(self, program: str, timeout_factor: float, wrap: Optional[str]) -> Suite:
 		# If there is no file, then no test.
 		if not os.path.exists(program):
 			raise FileNotFoundError(f"[FATAL ERROR] File (executable) named '{program}' not found.")
@@ -453,7 +457,7 @@ class Tester:
 		suite = Suite()
 		for test in self.__tests:
 			print(f"-- Performing {test.name}...")
-			result = test.run(program, timeout_factor)
+			result = test.run(program, timeout_factor, wrap)
 			# If it's Result, then there was a unknown error.
 			if not isinstance(result, Result):
 				user_process = result
