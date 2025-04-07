@@ -221,12 +221,13 @@ class Test:
 	# Otherwise, returns tuple of STDOUT, STDERR and RETURNCODE of program.
 	def __runner(self, program: str, input: Union[str, int, float, List[str], List[int], List[float]], timeout: float, timeout_factor: float, wrap: Optional[str]) -> Optional[UserProcess]:
 		full_program: List[str] = []
-		no_wrap = wrap is None
-		if no_wrap:
+		if wrap is None:
 			full_program = [program]
 		else:
 			full_program = [wrap, program]
 		full_timeout = timeout * timeout_factor
+
+		is_powershell = (wrap is not None and wrap == "powershell")
 
 		# If it's not STDIN communication, turn input to list as cmd's arguments.
 		if not self.__is_stdin_input:
@@ -235,7 +236,7 @@ class Test:
 		# If it's STDIN communication, then process should be created and then communicated.
 		# Otherwise, run once.
 		if self.__is_stdin_input:
-			proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True, shell = not no_wrap)
+			proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True, shell = is_powershell)
 			start = get_time()
 			try:
 				if self.__is_raw_input:
@@ -259,7 +260,7 @@ class Test:
 		else:
 			start = get_time()
 			try:
-				proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True, shell = not no_wrap)
+				proc = subprocess.Popen(full_program, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = True, shell = is_powershell)
 				stdout, stderr = proc.communicate(timeout = full_timeout)
 				end = get_time()
 				return UserProcess(stdout, stderr, proc.returncode, end - start)
