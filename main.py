@@ -9,10 +9,12 @@ from typing import Dict, Tuple, Optional, Set
 import testsuites.suite as suite
 import testsuites.sum as suite_sum
 import testsuites.invmat as suite_invmat
+import testsuites.libs as suite_libs
 
 SELECTOR: Dict[str, Tuple[suite.Tester, Optional[Dict[str, float]]]] = {
 	suite_sum.SUITE_NAME: suite_sum.get_instance(),
 	suite_invmat.SUITE_NAME: suite_invmat.get_instance(),
+	suite_libs.SUITE_NAME: suite_libs.get_instance()
 }
 
 SHELL: Set[str] = { "bash", "powershell" }
@@ -58,6 +60,9 @@ if __name__ == "__main__":
 
 	# Warm up system first.
 	task_select.run(suite_program, setup_timeout_factor, wrap, True)
+
+	# Funny.
+	print("--\n-- It's showtime, folks!\n--")
 
 	# Then run it naturally.
 	results = task_select.run(suite_program, setup_timeout_factor, wrap)

@@ -1,0 +1,4 @@
+igraph g {
+  y -> n;
+  n -> z;
+}

@@ -326,6 +326,10 @@ class Comparator(ABC):
 				print('   <-- STDERR')
 			return err_exitcode(returncode, test.exitcode)
 
+		# CASE: Comparator is not None, then test via it.
+		if test.comparator is not None:
+			return test.comparator.test(user_process, test)
+
 		return err_ok()
 
 	def __should_pass(self, user_process: UserProcess) -> Optional[Result]:
@@ -447,8 +451,8 @@ class Tester:
 		test = Test(name, categories, input, expected, output_stream, timeout, 0, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator, comparator)
 		self.__tests.append(test)
 
-	def add_failed(self, name: str, input: Union[str, int, float, List[str], List[int], List[float]], exitcode: int, timeout: float = 1.0, categories: Iterable[str] = []):
-		test = Test(name, categories, input, None, None, timeout, exitcode, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator)
+	def add_failed(self, name: str, input: Union[str, int, float, List[str], List[int], List[float]], exitcode: int, timeout: float = 1.0, categories: Iterable[str] = [], comparator: Optional[Comparator] = None):
+		test = Test(name, categories, input, None, None, timeout, exitcode, self.__is_stdin_input, self.__is_raw_input, self.__is_raw_output, self.__input_separator, comparator)
 		self.__tests.append(test)
 
 	def run(self, program: str, timeout_factor: float, wrap: Optional[str], warmup: bool = False) -> Optional[Suite]:
