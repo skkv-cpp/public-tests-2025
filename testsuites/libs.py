@@ -86,8 +86,18 @@ def __file_test(i: int, is_input: bool = True) -> str:
 def __file(i: int, is_input: bool = True) -> str:
 	return os.path.join(SUITE_DIR, __file_test(i, is_input))
 
-def __out(i: int) -> str:
+def __out(i: Union[int, str]) -> str:
 	return os.path.join(__OUTPATH, f"out{i}.dot")
+
+def __filename(name: str) -> str:
+	return os.path.join(SUITE_DIR, name)
+
+def __file_attrs_test(i: int, is_input: bool = True) -> str:
+	prefix = "attrs_in" if is_input else "attrs_out"
+	return f"{prefix}{i}.dot"
+
+def __file_attrs(i: int, is_input: bool = True) -> str:
+	return __filename(__file_attrs_test(i, is_input))
 
 def __generate_tests() -> Iterable[Tuple[str, List[str], str, str]]:
 	if os.path.exists(__OUTPATH) and not os.path.isdir(__OUTPATH):
@@ -103,6 +113,25 @@ def __generate_tests() -> Iterable[Tuple[str, List[str], str, str]]:
 		raw_input = __file(i, True)
 		raw_output = __out(i)
 		raw_expected = __file(i, False)
+		test_data = (name, [raw_input, raw_output], raw_output, raw_expected)
+		generated.append(test_data)
+
+	return generated
+
+def __generate_attrs_tests() -> Iterable[Tuple[str, List[str], str, str]]:
+	if os.path.exists(__OUTPATH) and not os.path.isdir(__OUTPATH):
+		raise ValueError(f"[FATAL ERROR] Provided path '{__OUTPATH}' should be directory.")
+
+	if not os.path.exists(__OUTPATH):
+		os.mkdir(__OUTPATH)
+
+	generated: List[Tuple[str, List[str], str, str]] = []
+
+	for i in range(0, 1):
+		name = f"Attributes #{i + 1}"
+		raw_input = __file_attrs(i, True)
+		raw_output =  __out(f"attrs{i}")
+		raw_expected = __file_attrs(i, False)
 		test_data = (name, [raw_input, raw_output], raw_output, raw_expected)
 		generated.append(test_data)
 
@@ -139,6 +168,11 @@ def get_instance() -> Tuple[suite.Tester, Optional[Dict[str, float]]]:
 	coefficients = suite.get_coefficients(SUITE_NAME, COEFF_TO_ENVNAME)
 
 	tests = __generate_tests()
+	for test_data in tests:
+		test_name, test_input, test_output_stream, test_expected = test_data
+		tester.add_success(test_name, test_input, test_expected, test_output_stream, categories = ["positive"])
+
+	tests = __generate_attrs_tests()
 	for test_data in tests:
 		test_name, test_input, test_output_stream, test_expected = test_data
 		tester.add_success(test_name, test_input, test_expected, test_output_stream, categories = ["positive"])
